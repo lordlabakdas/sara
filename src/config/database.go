@@ -34,12 +34,12 @@ func LoadEnv(env_file *string) (*string, *string, *string) {
 	return &username, &password, &url
 }
 
-func Connect() error {
+func Connect() *gorm.DB {
 	env_file := "local.env"
 	username, password, url := LoadEnv(&env_file)
 	var DATABASE_URI string = ("root:root@tcp(localhost:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local", username, password, url)
 	var err error
-    Database, err = gorm.Open(postgres.Open(DATABASE_URI), &gorm.Config{
+    Database, error := gorm.Open(postgres.Open(DATABASE_URI), &gorm.Config{
         SkipDefaultTransaction: true,
         PrepareStmt:            true,
     })
@@ -50,5 +50,5 @@ func Connect() error {
 
     Database.AutoMigrate(&entities.Book{})
 
-    return nil
+    return Database
 }
