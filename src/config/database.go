@@ -5,50 +5,38 @@ import (
 	"log"
 	"os"
 
-	"github.com/gofiber/fiber"
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
-	"github.com/lordlabakdas/sara/src/entities"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/lordlabakdas/sara/src/db/entities"
 )
 
-var Database *gorm.DB
+var envFile string = ".env"
 
-var DATABASE_URI string = "root:root@tcp(localhost:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local"
-
-
-type person struct {
-	name string
-	age  int
-  }
-
-func LoadEnv(env_file *string) (*string, *string, *string) {
+func LoadEnv(file *string) (*string, *string, *string, *string, *string) {
 	fmt.Println("Loading Environment Variables")
-	err := godotenv.Load(*env_file)
+	err := godotenv.Load(*file)
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	var username string = os.Getenv("USERNAME")
-	var password string = os.Getenv("PASSWORD")
-	var url string= os.Getenv("URL")
-	return &username, &password, &url
+	var dbname string = os.Getenv("DB_NAME")
+	var password string = os.Getenv("DB_PASSWORD")
+	var port string = os.Getenv("DB_PORT")
+	var dbHost string = os.Getenv("DB_HOST")
+	var dbUser string = os.Getenv("DB_USER")
+	return &dbname, &password, &port, &dbHost, &dbUser
 }
 
 func Connect() *gorm.DB {
-	env_file := "local.env"
-	username, password, url := LoadEnv(&env_file)
-	var DATABASE_URI string = ("root:root@tcp(localhost:3306)/gorm?charset=utf8mb4&parseTime=True&loc=Local", username, password, url)
-	var err error
-    Database, error := gorm.Open(postgres.Open(DATABASE_URI), &gorm.Config{
-        SkipDefaultTransaction: true,
-        PrepareStmt:            true,
-    })
+	dbname, password, port, dbHost, dbUser := LoadEnv(&envFile)
+	var databaseURI string = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", *dbUser, *password, *dbHost, *port, *dbname)
+	db, err := gorm.Open("postgres", databaseURI)
 
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 
-    Database.AutoMigrate(&entities.Book{})
+	db.AutoMigrate(&entities.Book{})
 
-    return Database
+	return db
 }
